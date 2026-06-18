@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # MySQL 服务配置
+  mysql:
+    image: mysql:8.0      # 使用 MySQL 8.0 镜像[reference:5][reference:6]
+    container_name: my-mysql # 指定容器名称，方便管理[reference:7]
+    restart: unless-stopped  # 容器退出时自动重启[reference:8]
+    environment:
+      # 从 .env 文件中读取敏感信息，更安全[reference:9][reference:10]
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}        # 启动时自动创建的数据库[reference:11]
+      MYSQL_USER: ${MYSQL_USER}                # 创建的用户名[reference:12]
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}        # 该用户的密码[reference:13]
+      TZ: Asia/Shanghai                        # 设置容器时区[reference:14]
+    ports:
+      - "3306:3306"       # 将宿主机的3306端口映射到容器的3306端口[reference:15]
+    volumes:
+      - mysql_data:/var/lib/mysql # 使用命名卷持久化存储数据[reference:16]
+      # 可选：挂载初始化脚本和自定义配置文件[reference:17]
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./mysql/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    networks:
+      - my-network         # 加入到自定义网络，便于服务间通信[reference:18]
+    healthcheck:           # 健康检查，确保服务可用后再启动依赖服务[reference:19]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis 服务配置
+  redis:
+    image: redis:7-alpine  # 使用基于 Alpine 的轻量级 Redis 7 镜像[reference:20]
+    container_name: my-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"       # 映射 Redis 默认端口[reference:21]
+    volumes:
+      - redis_data:/data   # 使用命名卷持久化 Redis 数据[reference:22][reference:23]
+      # 可选：挂载自定义配置文件[reference:24]
+      # - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - my-network
+    # 如果挂载了自定义配置文件，可以通过 command 指定[reference:25]
+    # command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:           # Redis 健康检查[reference:26]
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+# 定义网络，让容器在同一个网络内通过服务名（如 mysql, redis）通信[reference:27][reference:28]
+networks:
+  my-network:
+    driver: bridge
+
+# 定义数据卷，用于持久化存储数据，防止容器删除后数据丢失[reference:29]
+volumes:
+  mysql_data:
+  redis_data:

@@ -1,0 +1,40 @@
+{
+	"pages": [
+		{
+			"path": "pages/pets/index",
+			"style": {
+				"navigationBarTitleText": "我的宠物"
+			}
+		},
+		{
+			"path": "pages/pets/detail",
+			"style": {
+				"navigationBarTitleText": "宠物详情"
+			}
+		},
+		{
+			"path": "pages/pets/edit",
+			"style": {
+				"navigationBarTitleText": "编辑宠物"
+			}
+		},
+		{
+			"path": "pages/schedules/index",
+			"style": {
+				"navigationBarTitleText": "喂养计划"
+			}
+		},
+		{
+			"path": "pages/records/index",
+			"style": {
+				"navigationBarTitleText": "喂养记录"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "宠物助手",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8"
+	}
+}
