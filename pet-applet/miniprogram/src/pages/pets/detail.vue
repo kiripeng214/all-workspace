@@ -61,7 +61,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getPet, deletePet, getTodayRecords, createRecord, getSchedules, type FeedingRecord, type FeedingSchedule, type Pet } from '@/api'
 
 const petId = ref('')
@@ -75,6 +75,12 @@ const recordForm = ref({ time: '', foodType: '', amount: '', notes: '' })
 onLoad((options) => {
   petId.value = options?.id || ''
   loadData()
+})
+
+onShow(() => {
+  if (petId.value) {
+    loadData()
+  }
 })
 
 async function loadData() {
