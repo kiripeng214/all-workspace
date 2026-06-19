@@ -358,8 +358,10 @@ async function submitRecord() {
   display: block;
   border: 2rpx solid #ddd;
   border-radius: 12rpx;
-  padding: 20rpx 24rpx;
+  padding: 0 24rpx;
   font-size: 30rpx;
+  height: 80rpx;
+  line-height: 80rpx;
   width: 100%;
   box-sizing: border-box;
   margin-bottom: 30rpx;
