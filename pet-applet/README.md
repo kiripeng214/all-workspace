@@ -27,7 +27,14 @@ pet-applet/
 │   ├── pages.json            # 路由定义
 │   └── vite.config.ts        # Vite + uni-app 构建配置
 │
-├── .claude/              # Claude Code 配置（规则 / 技能 / 代理）
+├── .claude/              # Claude Code Loop Engine 体系
+│   ├── settings.json          # 总控配置（目录映射 / hooks / 偏好）
+│   ├── agents/               # 7 个专用子 agent
+│   ├── commands/             # 11 个 /project:* 快捷命令
+│   ├── skills/               # 3 个自动化技能脚本
+│   ├── workflows/            # 3 个多 agent 工作流
+│   ├── rules/                # 3 个领域编码规范
+│   └── memory/               # 持久记忆（偏好 / 决策 / 反馈）
 └── README.md
 ```
 
@@ -125,13 +132,62 @@ npm run build:h5
 | `DELETE` | `/api/records/:id`            | 删除喂养记录            |
 | `GET`    | `/api/meta/breeds`            | 获取动物类型和品种列表   |
 
-## 开发规范
+## Loop Engine（`.claude/` 体系）
 
-参见 `.claude/` 目录下的规则文件：
+Loop Engine 是项目的智能协作体系，让 Claude 理解项目结构、编码规范和历史决策，减少重复沟通。
 
-- [通用规范](.claude/rules/general/RULE.md)
-- [后端规范](.claude/rules/backend/RULE.md)
-- [前端规范](.claude/rules/frontend/RULE.md)
+### 组成
+
+| 目录 | 数量 | 作用 |
+|------|------|------|
+| `agents/` | 7 | 领域专用子 agent（Go 后端、uni-app 前端、数据库、审查等），各有独立工具权限 |
+| `commands/` | 11 | `/:project:*` 快捷命令，覆盖开发/测试/构建/部署全流程 |
+| `skills/` | 3 | 自动化脚本，`build-check` 绑定 pre-commit 自动校验 |
+| `workflows/` | 3 | 多 agent 编排工作流，支持并行任务 + 自动合并 |
+| `rules/` | 3 | 编码规范（通用/后端/前端），每次对话自动加载 |
+| `memory/` | — | 持久记忆，记录用户偏好、历史决策、反馈，跨会话自动加载 |
+
+### 核心工作流
+
+```
+你输入需求
+    │
+    ▼
+/project:loop-task   →   PRD → Plan → 实现
+    │                     ├── 顺序模式：单一领域
+    │                     └── 并行模式：跨领域（数据库+后端+前端并行）
+    │
+    ├── /component-split    →  分析大组件 → 拆分子组件 → 自动验证
+    ├── /code-review        →  多维度代码审查
+    ├── /deploy-build       →  后端 Docker 镜像 + 前端小程序打包
+    └── /push-code          →  检查→推送
+```
+
+### 自动纠错机制
+
+测试失败或审查发现问题时，自动进入纠错循环：
+
+```
+修复 → 重跑验证 → 还失败 → 再修复 → 再验证 → ... → 最多 5 轮
+```
+
+不中断、不等待用户确认，通过后自动继续流程。
+
+### 快捷命令一览
+
+| 命令 | 说明 |
+|------|------|
+| `/project:backend-start` | 构建并启动 Go 后端 |
+| `/project:frontend-dev` | 启动前端 H5 开发服务器 |
+| `/project:db-init` | 初始化 MySQL 数据库 |
+| `/project:build-check` | 提交前构建检查（4 步） |
+| `/project:type-check` | TypeScript 类型检查 |
+| `/project:component-split` | 大组件拆小组件 |
+| `/project:deploy-build` | 生产构建（后端镜像 + 前端小程序） |
+| `/project:push-code` | 检查后推送代码 |
+| `/project:loop-task` | 全流程：PRD→Plan→实现 |
+| `/project:loop-health` | Loop Engine 健康检查 |
+| `/project:loop-engineering` | 自动审查并调整 Loop Engine 体系 |
 
 ## 许可证
 
