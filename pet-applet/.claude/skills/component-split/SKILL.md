@@ -93,19 +93,38 @@ src/pages/pets/
 + <PetInfoCard :pet="pet" @edit="goEdit" />
 ```
 
-## 拆分检查清单
+## 拆分验证（自动执行）
 
-提交前逐项确认：
+拆分完成后**必须自动执行以下验证**，不通过则进入纠错循环（同 loop-task 机制）：
+
+### 验证步骤
+
+```bash
+cd miniprogram
+npx vue-tsc --noEmit      # 类型检查
+npx vitest run              # 测试通过
+```
+
+### 自动纠错循环
+
+```
+❌ vue-tsc 失败 → 分析报错 → 修复类型错误 → 重跑
+❌ vitest 失败 → 分析报错 → 修复逻辑错误 → 重跑
+✅ 全部通过 → 继续下一步
+```
+
+最大 3 轮，同一错误两次则终止。
+
+### 检查清单
+
+拆分前确认：
 
 - [ ] 子组件 `:props` 类型已定义（TypeScript interface）
 - [ ] 子组件 `defineEmits` 已声明
 - [ ] 子组件样式用 `scoped` 隔离（`<style scoped>`）
 - [ ] 父组件 import 路径正确
-- [ ] 父组件 `components` 注册（或自动导入）
 - [ ] 子组件不依赖父组件的 `provide/inject`（如无必要）
 - [ ] 子组件不直接调用父组件函数（用 emit）
-- [ ] 前端类型检查通过：`npx vue-tsc --noEmit`
-- [ ] 前端测试通过：`npx vitest run`
 
 ## 项目当前状况
 
