@@ -4,7 +4,7 @@
     <view v-else-if="pet" class="content">
       <view class="header">
         <text class="avatar">{{ pet.avatar }}</text>
-        <text class="name" @tap="openRename">{{ pet.name }}</text>
+        <text class="name">{{ pet.name }}</text>
         <view class="tags">
           <text class="tag" v-if="pet.breed">{{ pet.breed }}</text>
           <text class="tag" v-if="pet.birthday">🎂 {{ pet.birthday }}</text>
@@ -56,26 +56,13 @@
         <button class="btn" @tap="submitRecord">提交</button>
       </view>
     </uni-popup>
-
-    <uni-popup :show="showRename" @close="cancelRename">
-      <view class="popup">
-        <text class="popup-title">修改名称</text>
-        <input class="input" v-model="renameName" placeholder="宠物名字" />
-        <view class="popup-actions">
-          <button class="btn cancel" @tap="cancelRename">取消</button>
-          <button class="btn confirm" :disabled="renaming" @tap="submitRename">
-            {{ renaming ? '保存中...' : '确认' }}
-          </button>
-        </view>
-      </view>
-    </uni-popup>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { getPet, deletePet, getTodayRecords, createRecord, updatePet, getSchedules, type FeedingRecord, type FeedingSchedule, type Pet } from '@/api'
+import { getPet, deletePet, getTodayRecords, createRecord, getSchedules, type FeedingRecord, type FeedingSchedule, type Pet } from '@/api'
 
 const petId = ref('')
 const pet = ref<Pet | null>(null)
@@ -84,9 +71,6 @@ const todayRecords = ref<FeedingRecord[]>([])
 const schedules = ref<FeedingSchedule[]>([])
 const showCreateRecord = ref(false)
 const recordForm = ref({ time: '', foodType: '', amount: '', notes: '' })
-const showRename = ref(false)
-const renameName = ref('')
-const renaming = ref(false)
 
 onLoad((options) => {
   petId.value = options?.id || ''
@@ -140,41 +124,6 @@ function goSchedules() {
   uni.navigateTo({ url: `/pages/schedules/index?petId=${petId.value}&petName=${pet.value?.name}` })
 }
 
-function openRename() {
-  if (!pet.value) return
-  renameName.value = pet.value.name
-  showRename.value = true
-}
-
-async function submitRename() {
-  const name = renameName.value.trim()
-  if (!name) {
-    uni.showToast({ title: '名称不能为空', icon: 'none', duration: 2000 })
-    return
-  }
-  renaming.value = true
-  try {
-    await updatePet(petId.value, { name })
-    uni.showToast({ title: '修改成功', icon: 'success' })
-    showRename.value = false
-    renameName.value = ''
-    try {
-      await loadData()
-    } catch {
-      // 页面刷新失败不影响修改结果
-    }
-  } catch {
-    uni.showToast({ title: '修改失败', icon: 'error' })
-  } finally {
-    renaming.value = false
-  }
-}
-
-function cancelRename() {
-  showRename.value = false
-  renameName.value = ''
-}
-
 function onRecordTimeChange(e: any) {
   recordForm.value.time = e.detail.value
 }
@@ -214,13 +163,6 @@ async function submitRecord() {
   font-weight: 600;
   color: #333;
   margin-top: 16rpx;
-  padding: 8rpx 20rpx;
-  border: 2rpx dashed transparent;
-  border-radius: 12rpx;
-}
-.name:active {
-  border-color: #4CAF50;
-  background: #f0f9f0;
 }
 .tags {
   display: flex;
@@ -334,23 +276,5 @@ async function submitRecord() {
 .picker-value {
   color: #333;
   box-sizing: border-box;
-}
-.popup-actions {
-  display: flex;
-  gap: 20rpx;
-  margin-top: 16rpx;
-}
-.btn.cancel {
-  background: #f5f5f5;
-  color: #666;
-  flex: 1;
-}
-.btn.confirm {
-  background: #4CAF50;
-  color: #fff;
-  flex: 1;
-}
-.btn.confirm:disabled {
-  opacity: 0.6;
 }
 </style>
