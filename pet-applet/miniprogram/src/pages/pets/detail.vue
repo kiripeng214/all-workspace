@@ -149,7 +149,7 @@ function openRename() {
 async function submitRename() {
   const name = renameName.value.trim()
   if (!name) {
-    uni.showToast({ title: '名称不能为空', icon: 'none' })
+    uni.showToast({ title: '名称不能为空', icon: 'none', duration: 2000 })
     return
   }
   renaming.value = true
@@ -157,7 +157,12 @@ async function submitRename() {
     await updatePet(petId.value, { name })
     uni.showToast({ title: '修改成功', icon: 'success' })
     showRename.value = false
-    await loadData()
+    renameName.value = ''
+    try {
+      await loadData()
+    } catch {
+      // 页面刷新失败不影响修改结果
+    }
   } catch {
     uni.showToast({ title: '修改失败', icon: 'error' })
   } finally {
@@ -178,7 +183,7 @@ async function submitRecord() {
   await createRecord(petId.value, recordForm.value)
   showCreateRecord.value = false
   recordForm.value = { time: '', foodType: '', amount: '', notes: '' }
-  loadData()
+  await loadData()
 }
 </script>
 

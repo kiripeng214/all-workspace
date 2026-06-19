@@ -9,9 +9,9 @@ based-on: doc/prd/quick-rename.md
 
 ## 1. 方案概述
 
-- 仅涉及前端，后端 `PUT /pets/:id` 已支持局部更新
-- 在详情页 `pets/detail.vue` 的宠物名字上绑定 `@tap` 事件，弹出改名弹窗
-- 调用已有 `updatePet(id, { name })` API，保存后刷新页面
+- 仅涉及前端，后端 `PUT /pets/:id` 已支持局部更新（只传 name 字段）
+- 在详情页 `pets/detail.vue` 的宠物名字上绑定 `@tap` 事件，弹出 uni-popup 改名弹窗
+- 调用 `updatePet(id, { name })` 保存，成功后 `loadData()` 刷新
 
 ## 2. 涉及文件
 
@@ -23,30 +23,30 @@ based-on: doc/prd/quick-rename.md
 
 ```mermaid
 graph LR
-  A[名字绑 tap 事件] --> B[改名弹窗]
-  B --> C[保存逻辑 + 刷新]
+  A[名字绑 @tap] --> B[uni-popup 弹窗]
+  B --> C[updatePet API]
+  C --> D[loadData 刷新]
 ```
 
 ### 步骤 1: 名字绑定点击事件
 - `<text class="name">` 添加 `@tap="openRename"`
-- 与现有"编辑"按钮并存：改名是轻量操作，编辑按钮进完整表单
+- 名字添加虚线边框 + `:active` 态提示可点击
 
 ### 步骤 2: 改名弹窗
-- 使用 `uni-popup`（项目已用，与"记录喂养"弹窗一致）
+- 使用 `uni-popup`，`:show` 控制显隐
 - 弹窗标题"修改名称"，input 预填当前名，确认/取消按钮
-- `:show` 控制显隐
 
 ### 步骤 3: 保存逻辑
-- 空值校验，`updatePet(id, { name })` 保存
-- 保存中禁用按钮，成功后 `loadData()` 刷新
-- 与前端已有 `updatePet` 类型对齐：`UpdatePetParams` 是 `Partial<CreatePetParams>`，只传 `name` 即可
+- 空值校验
+- `updatePet(id, { name })` 保存（后端支持局部更新）
+- 保存中禁用按钮防重复提交
+- 成功后 `await loadData()` 刷新
 
 ## 4. 风险与回退
 
 | 风险 | 概率 | 应对 |
 |------|------|------|
-| `uni-popup` 已使用 | 无风险 | 沿用现有弹窗模式 |
-| 名字 tap 与编辑按钮重复 | 低 | 改名只改名字，编辑进完整表单，功能不同 |
+| 与"编辑"按钮功能重叠 | 低 | 改名只改名字，编辑进完整表单，各司其职 |
 
 ---
 
@@ -54,5 +54,4 @@ graph LR
 
 | 日期 | 版本 | 变更内容 | 作者 |
 |------|------|---------|------|
-| 2026-06-20 | v0.1 | 初稿（列表页长按方案） | Claude |
-| 2026-06-20 | v0.2 | 修正为详情页点击名字 | Claude |
+| 2026-06-20 | v1.0 | 定稿：详情页点击名字改名 | Claude |
