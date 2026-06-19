@@ -7,7 +7,7 @@
         <view class="name" @click="openRename">{{ pet.name }}</view>
         <view class="tags">
           <text class="tag" v-if="pet.breed">{{ pet.breed }}</text>
-          <text class="tag" v-if="pet.birthday">🎂 {{ pet.birthday }}</text>
+          <text class="tag" v-if="pet.birthday" @click="openBirthdayEdit">🎂 {{ pet.birthday }}</text>
           <text class="tag" v-if="pet.weight">⚖️ {{ pet.weight }}</text>
         </view>
         <text class="notes" v-if="pet.notes">{{ pet.notes }}</text>
@@ -69,6 +69,21 @@
         </view>
       </view>
     </view>
+
+    <view v-if="showBirthday" class="overlay" @click="cancelBirthday">
+      <view class="rename-box" @click.stop>
+        <text class="rename-title">修改生日</text>
+        <picker mode="date" :value="birthdayValue" @change="onBirthdayChange">
+          <view class="rename-input picker-value">{{ birthdayValue || '选择日期' }}</view>
+        </picker>
+        <view class="rename-actions">
+          <button class="rename-btn cancel" @click="cancelBirthday">取消</button>
+          <button class="rename-btn confirm" :disabled="savingBirthday" @click="submitBirthday">
+            {{ savingBirthday ? '保存中...' : '确认' }}
+          </button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -87,6 +102,9 @@ const recordForm = ref({ time: '', foodType: '', amount: '', notes: '' })
 const showRename = ref(false)
 const renameName = ref('')
 const renaming = ref(false)
+const showBirthday = ref(false)
+const birthdayValue = ref('')
+const savingBirthday = ref(false)
 
 onLoad((options) => {
   petId.value = options?.id || ''
@@ -169,6 +187,42 @@ function cancelRename() {
   showRename.value = false
 }
 
+function openBirthdayEdit() {
+  if (!pet.value) return
+  birthdayValue.value = pet.value.birthday
+  showBirthday.value = true
+}
+
+function onBirthdayChange(e: any) {
+  birthdayValue.value = e.detail.value
+}
+
+async function submitBirthday() {
+  if (!birthdayValue.value) {
+    uni.showToast({ title: '请选择日期', icon: 'none' })
+    return
+  }
+  if (pet.value && birthdayValue.value === pet.value.birthday) {
+    showBirthday.value = false
+    return
+  }
+  savingBirthday.value = true
+  try {
+    await updatePet(petId.value, { birthday: birthdayValue.value })
+    uni.showToast({ title: '修改成功', icon: 'success' })
+    showBirthday.value = false
+    await loadData()
+  } catch {
+    uni.showToast({ title: '修改失败', icon: 'error' })
+  } finally {
+    savingBirthday.value = false
+  }
+}
+
+function cancelBirthday() {
+  showBirthday.value = false
+}
+
 function onRecordTimeChange(e: any) {
   recordForm.value.time = e.detail.value
 }
@@ -229,6 +283,9 @@ async function submitRecord() {
   font-size: 24rpx;
   padding: 6rpx 16rpx;
   border-radius: 20rpx;
+}
+.tag:active {
+  background: #d0ebd0;
 }
 .notes {
   display: block;
