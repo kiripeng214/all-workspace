@@ -11,5 +11,12 @@
   "preferences": {
     "autoRunRules": true,
     "language": "zh-CN"
+  },
+  "hooks": {
+    "pre-commit": {
+      "description": "提交流前自动执行构建检查",
+      "command": "build-check",
+      "timeout": 60000
+    }
   }
 }
