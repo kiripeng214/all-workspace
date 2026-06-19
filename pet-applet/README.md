@@ -1,5 +1,7 @@
 # 🐾 宠物助手 (Pet Applet)
 
+[![CI](https://github.com/kiripeng214/all-workspace/actions/workflows/ci.yml/badge.svg)](https://github.com/kiripeng214/all-workspace/actions/workflows/ci.yml)
+
 一个宠物管理小程序，支持记录宠物信息、管理喂养计划和喂养记录。
 
 ## 项目结构
