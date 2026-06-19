@@ -4,7 +4,7 @@
     <view v-else-if="pet" class="content">
       <view class="header">
         <text class="avatar">{{ pet.avatar }}</text>
-        <view class="name" @tap="openRename">{{ pet.name }}</view>
+        <view class="name" @click="openRename">{{ pet.name }}</view>
         <view class="tags">
           <text class="tag" v-if="pet.breed">{{ pet.breed }}</text>
           <text class="tag" v-if="pet.birthday">🎂 {{ pet.birthday }}</text>
@@ -57,18 +57,18 @@
       </view>
     </uni-popup>
 
-    <uni-popup :show="showRename" @close="cancelRename">
-      <view class="popup">
-        <text class="popup-title">修改姓名</text>
-        <input class="input" v-model="renameName" placeholder="宠物姓名" />
-        <view class="popup-actions">
-          <button class="btn cancel" @tap="cancelRename">取消</button>
-          <button class="btn confirm" :disabled="renaming" @tap="submitRename">
+    <view v-if="showRename" class="overlay" @click="cancelRename">
+      <view class="rename-box" @click.stop>
+        <text class="rename-title">修改姓名</text>
+        <input class="rename-input" v-model="renameName" placeholder="宠物姓名" />
+        <view class="rename-actions">
+          <button class="rename-btn cancel" @click="cancelRename">取消</button>
+          <button class="rename-btn confirm" :disabled="renaming" @click="submitRename">
             {{ renaming ? '保存中...' : '确认' }}
           </button>
         </view>
       </view>
-    </uni-popup>
+    </view>
   </view>
 </template>
 
@@ -142,7 +142,6 @@ function goSchedules() {
 
 function openRename() {
   if (!pet.value) return
-  showCreateRecord.value = false
   renameName.value = pet.value.name
   showRename.value = true
 }
@@ -150,7 +149,7 @@ function openRename() {
 async function submitRename() {
   const name = renameName.value.trim()
   if (!name) {
-    uni.showToast({ title: '姓名不能为空', icon: 'none', duration: 2000 })
+    uni.showToast({ title: '姓名不能为空', icon: 'none' })
     return
   }
   renaming.value = true
@@ -158,10 +157,7 @@ async function submitRename() {
     await updatePet(petId.value, { name })
     uni.showToast({ title: '修改成功', icon: 'success' })
     showRename.value = false
-    renameName.value = ''
-    await loadData().catch(() => {
-      uni.showToast({ title: '已修改，刷新数据失败', icon: 'none' })
-    })
+    await loadData()
   } catch {
     uni.showToast({ title: '修改失败', icon: 'error' })
   } finally {
@@ -171,7 +167,6 @@ async function submitRename() {
 
 function cancelRename() {
   showRename.value = false
-  renameName.value = ''
 }
 
 function onRecordTimeChange(e: any) {
@@ -334,22 +329,61 @@ async function submitRecord() {
   color: #333;
   box-sizing: border-box;
 }
-.popup-actions {
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.rename-box {
+  background: #fff;
+  padding: 48rpx;
+  border-radius: 20rpx;
+  width: 560rpx;
+}
+.rename-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  display: block;
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+.rename-input {
+  border: 2rpx solid #ddd;
+  border-radius: 12rpx;
+  padding: 20rpx 24rpx;
+  font-size: 30rpx;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 30rpx;
+}
+.rename-actions {
   display: flex;
   gap: 20rpx;
-  margin-top: 16rpx;
 }
-.btn.cancel {
+.rename-btn {
+  flex: 1;
+  padding: 22rpx;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  text-align: center;
+  border: none;
+}
+.rename-btn.cancel {
   background: #f5f5f5;
   color: #666;
-  flex: 1;
 }
-.btn.confirm {
+.rename-btn.confirm {
   background: #4CAF50;
   color: #fff;
-  flex: 1;
 }
-.btn.confirm:disabled {
-  opacity: 0.6;
+.rename-btn.confirm:disabled {
+  opacity: 0.5;
 }
 </style>
