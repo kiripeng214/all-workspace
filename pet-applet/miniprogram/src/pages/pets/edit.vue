@@ -24,7 +24,12 @@
 
       <view class="field">
         <text class="label">体重</text>
-        <input class="input" v-model="form.weight" placeholder="如 15kg" />
+        <view class="weight-row">
+          <input class="input weight-input" type="digit" v-model="weightValue" placeholder="数值" />
+          <picker class="unit-picker" :range="weightUnits" @change="onWeightUnitChange">
+            <view class="picker unit-value">{{ weightUnit }}</view>
+          </picker>
+        </view>
       </view>
 
       <view class="field">
@@ -48,6 +53,9 @@ const petId = ref('')
 const form = reactive({ avatar: '', name: '', breed: '', birthday: '', weight: '', notes: '' })
 const emojis = ref<string[]>([])
 const breedOptions = ref<Record<string, string[]>>({})
+const weightValue = ref('')
+const weightUnit = ref('kg')
+const weightUnits = ['kg', 'g']
 
 const fallbackEmojis = ['🐶', '🐱', '🐰', '🐹', '🐦', '🐟', '🐢', '🦜', '🦊', '🐻']
 emojis.value = fallbackEmojis
@@ -81,6 +89,12 @@ onLoad(async (options) => {
       weight: pet.weight,
       notes: pet.notes,
     })
+    // 解析体重：如 "15kg" → value=15, unit=kg
+    const m = pet.weight?.match(/^([\d.]+)(kg|g)$/)
+    if (m) {
+      weightValue.value = m[1]
+      weightUnit.value = m[2]
+    }
     if (pet.avatar) {
       await loadBreeds(pet.avatar)
     }
@@ -95,11 +109,17 @@ function onDateChange(e: any) {
   form.birthday = e.detail.value
 }
 
+function onWeightUnitChange(e: any) {
+  weightUnit.value = weightUnits[e.detail.value] || 'kg'
+}
+
 async function onSubmit() {
   if (!form.name.trim()) {
     uni.showToast({ title: '请输入宠物名字', icon: 'none' })
     return
   }
+  // 拼接体重数值 + 单位
+  form.weight = weightValue.value ? `${weightValue.value}${weightUnit.value}` : ''
   if (isEdit.value) {
     await updatePet(petId.value, form)
     uni.showToast({ title: '保存成功', icon: 'success' })
@@ -149,6 +169,30 @@ async function onSubmit() {
   display: flex;
   align-items: center;
   color: #999;
+}
+.weight-row {
+  display: flex;
+  gap: 16rpx;
+  align-items: center;
+}
+.weight-input {
+  flex: 1;
+}
+.unit-picker {
+  min-width: 100rpx;
+}
+.unit-value {
+  border: 2rpx solid #e0e0e0;
+  border-radius: 16rpx;
+  padding: 24rpx 28rpx;
+  font-size: 30rpx;
+  color: #333;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  box-sizing: border-box;
 }
 .submit {
   background: linear-gradient(135deg, #FF8A65, #FF7043);
