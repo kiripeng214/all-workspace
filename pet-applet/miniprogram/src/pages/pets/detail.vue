@@ -4,7 +4,7 @@
     <view v-else-if="pet" class="content">
       <view class="header">
         <text class="avatar">{{ pet.avatar }}</text>
-        <text class="name" @tap="openRename">{{ pet.name }}</text>
+        <view class="name" @tap="openRename">{{ pet.name }}</view>
         <view class="tags">
           <text class="tag" v-if="pet.breed">{{ pet.breed }}</text>
           <text class="tag" v-if="pet.birthday">🎂 {{ pet.birthday }}</text>
