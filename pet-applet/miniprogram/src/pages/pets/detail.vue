@@ -355,6 +355,7 @@ async function submitRecord() {
   margin-bottom: 30rpx;
 }
 .rename-input {
+  display: block;
   border: 2rpx solid #ddd;
   border-radius: 12rpx;
   padding: 20rpx 24rpx;
