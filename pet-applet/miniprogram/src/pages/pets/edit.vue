@@ -1,18 +1,7 @@
 <template>
   <view class="edit">
     <view class="form">
-      <view class="avatar-picker">
-        <text class="current-avatar">{{ form.avatar || '🐾' }}</text>
-        <view class="emoji-grid">
-      <text
-            v-for="emoji in emojis"
-            :key="emoji"
-            class="emoji-option"
-            :class="{ active: form.avatar === emoji }"
-            @tap="onPickEmoji(emoji)"
-          >{{ emoji }}</text>
-        </view>
-      </view>
+      <AvatarPicker :avatar="form.avatar" :emojis="emojis" @pick="onPickEmoji" />
 
       <view class="field">
         <text class="label">名字 *</text>
@@ -52,6 +41,7 @@
 import { ref, reactive } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getPet, createPet, updatePet, getBreeds, type Pet } from '@/api'
+import AvatarPicker from './components/AvatarPicker.vue'
 
 const isEdit = ref(false)
 const petId = ref('')
@@ -134,30 +124,6 @@ async function onSubmit() {
   display: flex;
   flex-direction: column;
   gap: 32rpx;
-}
-.avatar-picker {
-  text-align: center;
-}
-.current-avatar {
-  font-size: 100rpx;
-  display: block;
-  margin-bottom: 20rpx;
-}
-.emoji-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16rpx;
-}
-.emoji-option {
-  font-size: 44rpx;
-  padding: 10rpx 14rpx;
-  border-radius: 16rpx;
-  border: 2rpx solid transparent;
-}
-.emoji-option.active {
-  border-color: #4CAF50;
-  background: #f0f9f0;
 }
 .field {
   display: flex;

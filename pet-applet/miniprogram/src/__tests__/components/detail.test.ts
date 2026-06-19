@@ -55,6 +55,10 @@ async function createWrapper() {
           template: '<view class="uni-popup-stub"><slot /></view>',
           props: ['show', 'modelValue'],
         },
+        picker: {
+          template: '<view class="picker-stub"><slot /></view>',
+          props: ['mode', 'value'],
+        },
       },
     },
   })
@@ -78,9 +82,9 @@ describe('改名弹窗交互', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('.overlay').exists()).toBe(true)
-    expect(wrapper.find('.rename-title').text()).toBe('修改姓名')
+    expect(wrapper.find('.overlay-title').text()).toBe('修改姓名')
 
-    const input = wrapper.find('.rename-input').element as HTMLInputElement
+    const input = wrapper.find('.overlay-input').element as HTMLInputElement
     expect(input.value).toBe('旺财')
   })
 
@@ -92,7 +96,7 @@ describe('改名弹窗交互', () => {
     await wrapper.vm.$nextTick()
     expect(wrapper.find('.overlay').exists()).toBe(true)
 
-    await wrapper.find('.rename-btn.cancel').trigger('click')
+    await wrapper.find('.overlay-btn.cancel').trigger('click')
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('.overlay').exists()).toBe(false)
@@ -105,10 +109,10 @@ describe('改名弹窗交互', () => {
     await wrapper.find('.name').trigger('click')
     await wrapper.vm.$nextTick()
 
-    const input = wrapper.find('.rename-input')
+    const input = wrapper.find('.overlay-input')
     await input.setValue('小强')
 
-    await wrapper.find('.rename-btn.confirm').trigger('click')
+    await wrapper.find('.overlay-btn.confirm').trigger('click')
     await new Promise(r => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
 
@@ -123,10 +127,10 @@ describe('改名弹窗交互', () => {
     await wrapper.find('.name').trigger('click')
     await wrapper.vm.$nextTick()
 
-    const input = wrapper.find('.rename-input')
+    const input = wrapper.find('.overlay-input')
     await input.setValue('')
 
-    await wrapper.find('.rename-btn.confirm').trigger('click')
+    await wrapper.find('.overlay-btn.confirm').trigger('click')
     await wrapper.vm.$nextTick()
 
     expect(mockUpdatePet).not.toHaveBeenCalled()
@@ -149,7 +153,7 @@ describe('生日弹窗交互', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('.overlay').exists()).toBe(true)
-    expect(wrapper.find('.rename-title').text()).toBe('修改生日')
+    expect(wrapper.find('.overlay-title').text()).toBe('修改生日')
   })
 
   it('不改日期直接确认关闭弹窗不发请求', async () => {
@@ -164,7 +168,7 @@ describe('生日弹窗交互', () => {
     // 弹窗已打开
     expect(wrapper.find('.overlay').exists()).toBe(true)
 
-    await wrapper.find('.rename-btn.confirm').trigger('click')
+    await wrapper.find('.overlay-btn.confirm').trigger('click')
     await new Promise(r => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
 

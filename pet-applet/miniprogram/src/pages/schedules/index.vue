@@ -12,40 +12,33 @@
       </view>
     </view>
 
-    <view class="add-area">
-      <text class="add-title">{{ editingSchedule ? '编辑计划' : '添加计划' }}</text>
-      <view class="add-row">
-        <text class="add-label">时间</text>
-        <picker mode="time" :value="form.time" @change="onTimeChange">
-          <view class="add-input picker-value">{{ form.time || '选择时间' }}</view>
-        </picker>
-      </view>
-      <view class="add-row">
-        <text class="add-label">食物</text>
-        <input class="add-input" v-model="form.foodType" placeholder="粮食" />
-      </view>
-      <view class="add-row">
-        <text class="add-label">分量</text>
-        <input class="add-input" v-model="form.amount" placeholder="一份" />
-      </view>
-      <view class="add-btns">
-        <button class="btn cancel" v-if="editingSchedule" @tap="cancelEdit">取消</button>
-        <button class="btn" @tap="onSubmit">{{ editingSchedule ? '保存' : '添加' }}</button>
-      </view>
+    <view class="fab" @tap="addSchedule">
+      <text class="fab-icon">+</text>
+      <text class="fab-text">添加计划</text>
     </view>
+
+    <ScheduleForm
+      :show="showForm"
+      :editing="!!editingSchedule"
+      :initial="editingSchedule"
+      @submit="onFormSubmit"
+      @cancel="closeForm"
+      @close="closeForm"
+    />
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getSchedules, createSchedule, updateSchedule, deleteSchedule, type FeedingSchedule } from '@/api'
+import ScheduleForm from './components/ScheduleForm.vue'
 
 const petId = ref('')
 const petName = ref('')
 const schedules = ref<FeedingSchedule[]>([])
 const editingSchedule = ref<FeedingSchedule | null>(null)
-const form = reactive({ time: '', foodType: '', amount: '' })
+const showForm = ref(false)
 
 onLoad((options) => {
   petId.value = options?.petId || ''
@@ -58,35 +51,28 @@ async function loadSchedules() {
   schedules.value = await getSchedules(petId.value)
 }
 
+function addSchedule() {
+  editingSchedule.value = null
+  showForm.value = true
+}
+
 function editSchedule(s: FeedingSchedule) {
   editingSchedule.value = s
-  form.time = s.time
-  form.foodType = s.foodType
-  form.amount = s.amount
+  showForm.value = true
 }
 
-function cancelEdit() {
+function closeForm() {
+  showForm.value = false
   editingSchedule.value = null
-  form.time = ''
-  form.foodType = ''
-  form.amount = ''
 }
 
-function onTimeChange(e: any) {
-  form.time = e.detail.value
-}
-
-async function onSubmit() {
-  if (!form.time.trim()) {
-    uni.showToast({ title: '请输入时间', icon: 'none' })
-    return
-  }
+async function onFormSubmit(form: { time: string; foodType: string; amount: string }) {
   if (editingSchedule.value) {
     await updateSchedule(editingSchedule.value.id, form)
   } else {
     await createSchedule(petId.value, form)
   }
-  cancelEdit()
+  closeForm()
   loadSchedules()
 }
 
@@ -150,54 +136,26 @@ function confirmDelete(id: string) {
 }
 .action.edit { color: #4CAF50; }
 .action.delete { color: #f44336; }
-.add-area {
-  background: #fff;
-  border-radius: 12rpx;
-  padding: 24rpx;
-  margin-top: 20rpx;
-}
-.add-title {
-  font-size: 30rpx;
-  font-weight: 600;
-  display: block;
-  margin-bottom: 16rpx;
-}
-.add-row {
+.fab {
   display: flex;
   align-items: center;
-  margin-bottom: 12rpx;
-}
-.add-label {
-  font-size: 26rpx;
-  color: #666;
-  width: 100rpx;
-}
-.add-input {
-  flex: 1;
-  border: 1rpx solid #ddd;
-  border-radius: 6rpx;
-  padding: 12rpx 16rpx;
-  font-size: 26rpx;
-}
-.picker-value {
-  color: #333;
-  box-sizing: border-box;
-}
-.add-btns {
-  display: flex;
-  gap: 16rpx;
-  margin-top: 16rpx;
-}
-.btn {
-  flex: 1;
+  justify-content: center;
+  gap: 8rpx;
   background: #4CAF50;
   color: #fff;
-  border: none;
-  padding: 16rpx;
-  border-radius: 8rpx;
+  padding: 20rpx;
+  border-radius: 12rpx;
   font-size: 28rpx;
+  margin-top: 16rpx;
 }
-.btn.cancel {
-  background: #999;
+.fab:active {
+  opacity: 0.8;
+}
+.fab-icon {
+  font-size: 36rpx;
+  font-weight: 600;
+}
+.fab-text {
+  font-size: 28rpx;
 }
 </style>
