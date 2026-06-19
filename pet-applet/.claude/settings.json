@@ -1,0 +1,15 @@
+{
+  "project": "pet-applet",
+  "description": "宠物助手 — 宠物管理应用 (Go backend + uni-app/Vue 3 frontend)",
+  "commands": {
+    "dir": "commands",
+    "prefix": "project:"
+  },
+  "rules": "rules",
+  "skills": "skills",
+  "agents": "agents",
+  "preferences": {
+    "autoRunRules": true,
+    "language": "zh-CN"
+  }
+}
