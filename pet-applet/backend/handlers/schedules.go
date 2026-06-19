@@ -147,6 +147,9 @@ func UpdateSchedule(c *gin.Context) {
 
 func DeleteSchedule(c *gin.Context) {
 	id := c.Param("id")
-	database.DB.Exec("DELETE FROM feeding_schedules WHERE id = ?", id)
+	if _, err := database.DB.Exec("DELETE FROM feeding_schedules WHERE id = ?", id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "已删除"})
 }

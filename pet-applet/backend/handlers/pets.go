@@ -181,15 +181,20 @@ func DeletePet(c *gin.Context) {
 	id := c.Param("id")
 
 	var exists bool
-	database.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM pets WHERE id=?)", id).Scan(&exists)
+	if err := database.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM pets WHERE id=?)", id).Scan(&exists); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	if !exists {
 		c.JSON(http.StatusNotFound, gin.H{"error": "宠物不存在"})
 		return
 	}
 
-	database.DB.Exec("DELETE FROM feeding_records WHERE pet_id = ?", id)
-	database.DB.Exec("DELETE FROM feeding_schedules WHERE pet_id = ?", id)
-	database.DB.Exec("DELETE FROM pets WHERE id = ?", id)
+	// 外键 ON DELETE CASCADE 会自动删除 feeding_schedules 和 feeding_records
+	if _, err := database.DB.Exec("DELETE FROM pets WHERE id = ?", id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "已删除"})
 }

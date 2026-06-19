@@ -145,6 +145,9 @@ func CreateRecord(c *gin.Context) {
 
 func DeleteRecord(c *gin.Context) {
 	id := c.Param("id")
-	database.DB.Exec("DELETE FROM feeding_records WHERE id = ?", id)
+	if _, err := database.DB.Exec("DELETE FROM feeding_records WHERE id = ?", id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "已删除"})
 }
