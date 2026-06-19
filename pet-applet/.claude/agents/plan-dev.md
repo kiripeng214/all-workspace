@@ -17,6 +17,8 @@ tools: [Read, Grep, Glob, LSP, WebSearch, WebFetch]
 
 ## 输出规范
 
+### 自然语言调用时（默认）
+
 计划需包含以下内容：
 
 ```markdown
@@ -34,6 +36,10 @@ tools: [Read, Grep, Glob, LSP, WebSearch, WebFetch]
 ## 风险点
 - 可能影响的功能 / 数据迁移考量 / 回退方案
 ```
+
+### Workflow 调用时
+
+被 `workflows/parallel-task.js` 调度时，按照传入的 JSON Schema 输出结构化数据（子任务清单、API 契约、数据库变更）。此时省略 Markdown 格式，严格按 schema 要求的字段输出。
 
 ## 原则
 
