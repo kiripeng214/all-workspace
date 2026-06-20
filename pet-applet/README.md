@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/kiripeng214/all-workspace/actions/workflows/ci.yml/badge.svg)](https://github.com/kiripeng214/all-workspace/actions/workflows/ci.yml)
 
+<video src="https://github.com/kiripeng214/all-workspace/raw/main/doc/pet-applet.mov" width="100%" controls></video>
+
 一个宠物管理小程序，支持记录宠物信息、管理喂养计划和喂养记录。
 
 ## 项目结构

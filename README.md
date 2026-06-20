@@ -8,4 +8,6 @@
 
 Go + Vue 3 + TypeScript 全栈宠物管理应用。
 
+<video src="https://github.com/kiripeng214/all-workspace/raw/main/doc/pet-applet.mov" width="100%" controls></video>
+
 → [项目详情](pet-applet/README.md)
