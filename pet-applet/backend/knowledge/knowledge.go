@@ -66,6 +66,15 @@ func GetLLM() LLMProvider {
 	return llm
 }
 
+// toFloat32 []float64 → []float32
+func toFloat32(src []float64) []float32 {
+	dst := make([]float32, len(src))
+	for i, v := range src {
+		dst[i] = float32(v)
+	}
+	return dst
+}
+
 // newEmbeddingFunc 创建 chromem-go 兼容的 embedding 函数
 func newEmbeddingFunc(cfg LLMConfig) chromem.EmbeddingFunc {
 	url := cfg.EmbeddingURL
@@ -122,7 +131,8 @@ func newEmbeddingFunc(cfg LLMConfig) chromem.EmbeddingFunc {
 			} `json:"data"`
 		}
 		if err := json.Unmarshal(respBody, &result); err != nil || len(result.Data) == 0 {
-			return nil, err
+			log.Printf("Embedding API 响应异常，使用本地 embedding")
+			return toFloat32(cosineChunkEmbedding(text)), nil
 		}
 		raw := result.Data[0].Embedding
 		vec32 := make([]float32, len(raw))
