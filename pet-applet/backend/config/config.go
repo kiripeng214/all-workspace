@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 
@@ -25,21 +26,33 @@ type Server struct {
 }
 
 func Load() *Config {
+	// 1. 加载主配置
 	path := filepath.Join("config", "config.yaml")
 	if v := os.Getenv("CONFIG_PATH"); v != "" {
 		path = v
 	}
 
+	cfg := defaultConfig()
+
 	data, err := os.ReadFile(path)
-	if err != nil {
-		return defaultConfig()
+	if err == nil {
+		if err := yaml.Unmarshal(data, cfg); err != nil {
+			log.Printf("⚠️ 配置解析失败，使用默认值: %v", err)
+		}
 	}
 
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return defaultConfig()
+	// 2. 加载本地覆盖配置（不上传）
+	localPath := filepath.Join("config", "config-local.yaml")
+	if v := os.Getenv("CONFIG_LOCAL_PATH"); v != "" {
+		localPath = v
 	}
-	return &cfg
+	if localData, err := os.ReadFile(localPath); err == nil {
+		if err := yaml.Unmarshal(localData, cfg); err != nil {
+			log.Printf("⚠️ 本地配置解析失败: %v", err)
+		}
+	}
+
+	return cfg
 }
 
 func defaultConfig() *Config {

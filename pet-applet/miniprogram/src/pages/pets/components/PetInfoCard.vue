@@ -10,6 +10,7 @@
     <text class="notes" v-if="pet.notes">{{ pet.notes }}</text>
     <view class="actions">
       <button class="btn" @tap="goEdit">编辑</button>
+      <button class="btn" @tap="goKnowledge">知识</button>
       <button class="btn danger" @tap="confirmDelete">删除</button>
     </view>
 
@@ -53,6 +54,7 @@ const emit = defineEmits<{
   (e: 'delete'): void
   (e: 'name-changed'): void
   (e: 'birthday-changed'): void
+  (e: 'knowledge'): void
 }>()
 
 const showRename = ref(false)
@@ -64,6 +66,10 @@ const savingBirthday = ref(false)
 
 function goEdit() {
   emit('edit')
+}
+
+function goKnowledge() {
+  emit('knowledge')
 }
 
 function confirmDelete() {

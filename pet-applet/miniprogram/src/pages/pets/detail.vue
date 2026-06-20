@@ -8,6 +8,7 @@
         @delete="handleDelete"
         @name-changed="loadData"
         @birthday-changed="loadData"
+        @knowledge="goKnowledge"
       />
       <TodayRecords
         :records="todayRecords"
@@ -79,6 +80,10 @@ function goRecords() {
 
 function goSchedules() {
   uni.navigateTo({ url: `/pages/schedules/index?petId=${petId.value}&petName=${pet.value?.name}` })
+}
+
+function goKnowledge() {
+  uni.navigateTo({ url: `/pages/knowledge/index?breed=${pet.value?.breed}&name=${pet.value?.name}` })
 }
 </script>
 

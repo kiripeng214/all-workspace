@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -8,11 +9,17 @@ import (
 	"pet-applet-backend/config"
 	"pet-applet-backend/database"
 	"pet-applet-backend/handlers"
+	"pet-applet-backend/knowledge"
 )
 
 func main() {
 	cfg := config.Load()
 	database.Init(cfg)
+
+	// 初始化知识库
+	if err := knowledge.Init(context.Background()); err != nil {
+		log.Printf("⚠️ 知识库初始化失败（不影响核心功能）: %v", err)
+	}
 
 	r := gin.Default()
 
@@ -39,6 +46,9 @@ func main() {
 		api.GET("/pets/records/today/:petId", handlers.GetTodayRecords)
 		api.POST("/pets/records/:petId", handlers.CreateRecord)
 		api.DELETE("/records/:id", handlers.DeleteRecord)
+
+		// Knowledge (RAG)
+		api.GET("/knowledge/search", handlers.SearchKnowledge)
 	}
 
 	log.Printf("🐾 服务启动于 http://localhost:%s", cfg.Server.Port)

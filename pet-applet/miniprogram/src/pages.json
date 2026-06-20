@@ -29,6 +29,12 @@
 			"style": {
 				"navigationBarTitleText": "喂养记录"
 			}
+		},
+		{
+			"path": "pages/knowledge/index",
+			"style": {
+				"navigationBarTitleText": "宠物知识"
+			}
 		}
 	],
 	"globalStyle": {
