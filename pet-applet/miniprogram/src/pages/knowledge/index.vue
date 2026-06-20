@@ -50,13 +50,15 @@ const answer = ref<LLMAnswer | null>(null)
 const loading = ref(false)
 const searched = ref(false)
 
-onLoad((options) => {
-  if (options?.breed) {
-    petBreed.value = options.breed
-    query.value = options.breed
+onLoad((options: any) => {
+  const breed = options?.breed ? decodeURIComponent(options.breed) : ''
+  const name = options?.name ? decodeURIComponent(options.name) : ''
+  if (breed) {
+    petBreed.value = breed
+    query.value = breed
   }
-  if (options?.name) {
-    petName.value = options.name
+  if (name) {
+    petName.value = name
   }
   if (petBreed.value) {
     doSearch()
