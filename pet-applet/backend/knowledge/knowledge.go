@@ -90,12 +90,7 @@ func newEmbeddingFunc(cfg LLMConfig) chromem.EmbeddingFunc {
 
 	return func(ctx context.Context, text string) ([]float32, error) {
 		if url == "" {
-			vec64 := cosineChunkEmbedding(text)
-			vec32 := make([]float32, len(vec64))
-			for i, v := range vec64 {
-				vec32[i] = float32(v)
-			}
-			return vec32, nil
+			return toFloat32(cosineChunkEmbedding(text)), nil
 		}
 
 		body := map[string]interface{}{
@@ -115,12 +110,7 @@ func newEmbeddingFunc(cfg LLMConfig) chromem.EmbeddingFunc {
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			log.Printf("Embedding API 调用失败 (%v)，使用本地 embedding", err)
-			vec64 := cosineChunkEmbedding(text)
-			vec32 := make([]float32, len(vec64))
-			for i, v := range vec64 {
-				vec32[i] = float32(v)
-			}
-			return vec32, nil
+			return toFloat32(cosineChunkEmbedding(text)), nil
 		}
 		defer resp.Body.Close()
 
@@ -131,7 +121,10 @@ func newEmbeddingFunc(cfg LLMConfig) chromem.EmbeddingFunc {
 			} `json:"data"`
 		}
 		if err := json.Unmarshal(respBody, &result); err != nil || len(result.Data) == 0 {
-			log.Printf("Embedding API 响应异常，使用本地 embedding")
+	preview := string(respBody)
+	if len(preview) > 300 { preview = preview[:300] }
+	log.Printf("Embedding API 响应异常 (%s)，使用本地 embedding", preview)
+			//log.Printf("Embedding API 响应异常，使用本地 embedding")
 			return toFloat32(cosineChunkEmbedding(text)), nil
 		}
 		raw := result.Data[0].Embedding
