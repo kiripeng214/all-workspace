@@ -14,6 +14,7 @@ import (
 
 var (
 	collection *chromem.Collection
+	llm        LLMProvider
 	initOnce   sync.Once
 )
 
@@ -25,8 +26,8 @@ type Result struct {
 	Score   float64 `json:"score"`
 }
 
-// Init 初始化向量知识库
-func Init(ctx context.Context) error {
+// Init 初始化向量知识库和 LLM 提供者
+func Init(ctx context.Context, llmCfg LLMConfig) error {
 	var initErr error
 	initOnce.Do(func() {
 		db := chromem.NewDB()
@@ -40,9 +41,15 @@ func Init(ctx context.Context) error {
 			initErr = fmt.Errorf("初始化知识库失败: %w", err)
 			return
 		}
+		llm = NewProvider(llmCfg)
 		log.Printf("知识库加载完成，共 %d 条", len(SeedData))
 	})
 	return initErr
+}
+
+// GetLLM 获取 LLM 提供者（供 handler 调用）
+func GetLLM() LLMProvider {
+	return llm
 }
 
 func seed(ctx context.Context) error {

@@ -6,10 +6,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
-	"os"
 	"strings"
 )
+
+// LLMProvider LLM 提供者接口
+type LLMProvider interface {
+	Ask(ctx context.Context, prompt string) (string, error)
+}
+
+// LLMConfig LLM 配置
+type LLMConfig struct {
+	Provider string
+	APIKey   string
+	APIURL   string
+	Model    string
+}
 
 // LLMResponse LLM 回答
 type LLMResponse struct {
@@ -17,20 +30,66 @@ type LLMResponse struct {
 	Sources []string `json:"sources"`
 }
 
-// QueryLLM 调用 LLM API 生成回答
-func QueryLLM(ctx context.Context, query string, results []Result) (*LLMResponse, error) {
-	apiKey := os.Getenv("LLM_API_KEY")
-	apiURL := os.Getenv("LLM_API_URL")
-	model := os.Getenv("LLM_MODEL")
+// OpenAIProvider OpenAI 兼容 API 实现
+type OpenAIProvider struct {
+	apiKey string
+	apiURL string
+	model  string
+}
 
-	if apiKey == "" || apiURL == "" {
-		return fallbackResponse(query, results), nil
+func (p *OpenAIProvider) Ask(ctx context.Context, prompt string) (string, error) {
+	body := map[string]interface{}{
+		"model": p.model,
+		"messages": []map[string]string{
+			{"role": "user", "content": prompt},
+		},
+		"max_tokens": 1024,
 	}
-	if model == "" {
-		model = "claude-sonnet-4-20250514"
+	data, _ := json.Marshal(body)
+	req, err := http.NewRequestWithContext(ctx, "POST", p.apiURL, bytes.NewReader(data))
+	if err != nil {
+		return "", err
 	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
-	// 构建上下文
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+
+	var result struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.Unmarshal(respBody, &result); err != nil || len(result.Choices) == 0 {
+		return "", fmt.Errorf("OpenAI 响应解析失败: %s", string(respBody))
+	}
+	return result.Choices[0].Message.Content, nil
+}
+
+// NewProvider 根据配置创建 LLM 提供者
+func NewProvider(cfg LLMConfig) LLMProvider {
+	if cfg.APIKey == "" || cfg.APIURL == "" {
+		log.Println("LLM 未配置，使用降级模式")
+		return nil
+	}
+	switch cfg.Provider {
+	case "anthropic":
+		return &AnthropicProvider{apiKey: cfg.APIKey, apiURL: cfg.APIURL, model: cfg.Model}
+	default:
+		return &OpenAIProvider{apiKey: cfg.APIKey, apiURL: cfg.APIURL, model: cfg.Model}
+	}
+}
+
+// buildPrompt 构建 RAG 提示词
+func buildPrompt(query string, results []Result) (string, []string) {
 	var contextParts []string
 	var sources []string
 	seen := make(map[string]bool)
@@ -48,7 +107,7 @@ func QueryLLM(ctx context.Context, query string, results []Result) (*LLMResponse
 
 	contextStr := strings.Join(contextParts, "\n\n")
 	if contextStr == "" {
-		return fallbackResponse(query, results), nil
+		return "", sources
 	}
 
 	prompt := fmt.Sprintf(`你是一个宠物养护专家。基于以下知识库内容回答用户的问题。
@@ -61,58 +120,30 @@ func QueryLLM(ctx context.Context, query string, results []Result) (*LLMResponse
 
 请用中文回答，语言通俗易懂，不要编造知识库中没有的信息。如果知识库内容不足以回答问题，请如实告知。`, contextStr, query)
 
-	// 调用 OpenAPI 兼容的 LLM API
-	body := map[string]interface{}{
-		"model": model,
-		"messages": []map[string]string{
-			{"role": "user", "content": prompt},
-		},
-		"max_tokens": 1024,
+	return prompt, sources
+}
+
+// QueryLLM 使用 LLM provider 生成回答
+func QueryLLM(ctx context.Context, query string, results []Result, provider LLMProvider) *LLMResponse {
+	prompt, sources := buildPrompt(query, results)
+	if prompt == "" {
+		return fallbackResponse(query, results)
 	}
 
-	data, _ := json.Marshal(body)
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(data))
+	if provider == nil {
+		return fallbackResponse(query, results)
+	}
+
+	answer, err := provider.Ask(ctx, prompt)
 	if err != nil {
-		return fallbackResponse(query, results), nil
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fallbackResponse(query, results), nil
-	}
-	defer resp.Body.Close()
-
-	respBody, _ := io.ReadAll(resp.Body)
-
-	var apiResult struct {
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
-	}
-	if err := json.Unmarshal(respBody, &apiResult); err != nil || len(apiResult.Choices) == 0 {
-		// 尝试 Anthropic 格式
-		var anthropicResult struct {
-			Content []struct {
-				Text string `json:"text"`
-			} `json:"content"`
-		}
-		if err := json.Unmarshal(respBody, &anthropicResult); err == nil && len(anthropicResult.Content) > 0 {
-			return &LLMResponse{
-				Answer:  anthropicResult.Content[0].Text,
-				Sources: sources,
-			}, nil
-		}
-		return fallbackResponse(query, results), nil
+		log.Printf("LLM 调用失败: %v，降级为检索结果", err)
+		return fallbackResponse(query, results)
 	}
 
 	return &LLMResponse{
-		Answer:  apiResult.Choices[0].Message.Content,
+		Answer:  answer,
 		Sources: sources,
-	}, nil
+	}
 }
 
 // fallbackResponse 无 LLM 时返回纯检索结果

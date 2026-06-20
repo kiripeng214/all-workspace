@@ -9,8 +9,16 @@ import (
 )
 
 type Config struct {
-	DB     DBConfig `yaml:"db"`
-	Server Server   `yaml:"server"`
+	DB     DBConfig    `yaml:"db"`
+	Server Server      `yaml:"server"`
+	LLM    LLMConfig   `yaml:"llm"`
+}
+
+type LLMConfig struct {
+	Provider string `yaml:"provider"`
+	APIKey   string `yaml:"api_key"`
+	APIURL   string `yaml:"api_url"`
+	Model    string `yaml:"model"`
 }
 
 type DBConfig struct {

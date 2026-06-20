@@ -7,3 +7,9 @@ db:
 
 server:
   port: "3000"
+
+llm:
+  provider: openai       # openai | anthropic | ""
+  api_key: ""
+  api_url: ""
+  model: "gpt-4o-mini"

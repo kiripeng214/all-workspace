@@ -32,16 +32,7 @@ func SearchKnowledge(c *gin.Context) {
 		return
 	}
 
-	// 调用 LLM 生成回答
-	llmResp, err := knowledge.QueryLLM(c.Request.Context(), query, results)
-	if err != nil {
-		// LLM 失败返回纯检索结果
-		c.JSON(http.StatusOK, gin.H{
-			"results": results,
-			"answer":  nil,
-		})
-		return
-	}
+	llmResp := knowledge.QueryLLM(c.Request.Context(), query, results, knowledge.GetLLM())
 
 	c.JSON(http.StatusOK, gin.H{
 		"results": results,
