@@ -1,3 +1,4 @@
+-- +goose Up
 CREATE TABLE IF NOT EXISTS pets (
     id VARCHAR(36) PRIMARY KEY,
     avatar VARCHAR(10) NOT NULL DEFAULT '🐾',
@@ -8,3 +9,6 @@ CREATE TABLE IF NOT EXISTS pets (
     notes TEXT,
     created_at BIGINT NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- +goose Down
+DROP TABLE IF EXISTS pets;

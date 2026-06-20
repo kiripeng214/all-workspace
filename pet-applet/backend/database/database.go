@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/pressly/goose/v3"
 
 	"pet-applet-backend/config"
-	"pet-applet-backend/database/migration"
 )
 
 var DB *sql.DB
@@ -34,8 +34,11 @@ func Init(cfg *config.Config) {
 
 	log.Println("数据库连接成功")
 
+	if err := goose.SetDialect("mysql"); err != nil {
+		log.Fatalf("设置 goose dialect 失败: %v", err)
+	}
 	dir := resolveMigrationsDir()
-	if err := migration.Run(DB, dir); err != nil {
+	if err := goose.Up(DB, dir); err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)
 	}
 }

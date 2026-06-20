@@ -1,3 +1,4 @@
+-- +goose Up
 CREATE TABLE IF NOT EXISTS feeding_records (
     id VARCHAR(36) PRIMARY KEY,
     pet_id VARCHAR(36) NOT NULL,
@@ -9,3 +10,6 @@ CREATE TABLE IF NOT EXISTS feeding_records (
     created_at BIGINT NOT NULL,
     FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- +goose Down
+DROP TABLE IF EXISTS feeding_records;
