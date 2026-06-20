@@ -83,7 +83,12 @@ function goSchedules() {
 }
 
 function goKnowledge() {
-  uni.navigateTo({ url: `/pages/knowledge/index?breed=${pet.value?.breed}&name=${pet.value?.name}` })
+  const breed = encodeURIComponent(pet.value?.breed || '')
+  const name = encodeURIComponent(pet.value?.name || '')
+  uni.navigateTo({
+    url: `/pages/knowledge/index?breed=${breed}&name=${name}`,
+    fail(err) { console.error('跳转知识库失败:', err) },
+  })
 }
 </script>
 
