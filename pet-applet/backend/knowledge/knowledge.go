@@ -1,11 +1,15 @@
 package knowledge
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math"
+	"net/http"
 	"strings"
 	"sync"
 	"unicode/utf8"
@@ -33,8 +37,9 @@ func Init(ctx context.Context, sqlDB *sql.DB, llmCfg LLMConfig) error {
 	var initErr error
 	initOnce.Do(func() {
 		db := chromem.NewDB()
+		embedFunc := newEmbeddingFunc(llmCfg)
 		var err error
-		collection, err = db.CreateCollection("pet-knowledge", nil, nil)
+		collection, err = db.CreateCollection("pet-knowledge", nil, embedFunc)
 		if err != nil {
 			initErr = fmt.Errorf("创建 collection 失败: %w", err)
 			return
@@ -59,6 +64,73 @@ func Init(ctx context.Context, sqlDB *sql.DB, llmCfg LLMConfig) error {
 // GetLLM 获取 LLM 提供者（供 handler 调用）
 func GetLLM() LLMProvider {
 	return llm
+}
+
+// newEmbeddingFunc 创建 chromem-go 兼容的 embedding 函数
+func newEmbeddingFunc(cfg LLMConfig) chromem.EmbeddingFunc {
+	url := cfg.EmbeddingURL
+	if url == "" {
+		url = cfg.APIURL
+		// 聊天 API 路径通常是 /chat/completions，embedding 是 /embeddings
+		url = strings.Replace(url, "/chat/completions", "/embeddings", 1)
+	}
+	model := cfg.EmbeddingModel
+	if model == "" {
+		model = "text-embedding-ada-002"
+	}
+
+	return func(ctx context.Context, text string) ([]float32, error) {
+		if url == "" {
+			vec64 := cosineChunkEmbedding(text)
+			vec32 := make([]float32, len(vec64))
+			for i, v := range vec64 {
+				vec32[i] = float32(v)
+			}
+			return vec32, nil
+		}
+
+		body := map[string]interface{}{
+			"model": model,
+			"input": text,
+		}
+		data, _ := json.Marshal(body)
+		req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(data))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		if cfg.APIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			log.Printf("Embedding API 调用失败 (%v)，使用本地 embedding", err)
+			vec64 := cosineChunkEmbedding(text)
+			vec32 := make([]float32, len(vec64))
+			for i, v := range vec64 {
+				vec32[i] = float32(v)
+			}
+			return vec32, nil
+		}
+		defer resp.Body.Close()
+
+		respBody, _ := io.ReadAll(resp.Body)
+		var result struct {
+			Data []struct {
+				Embedding []float64 `json:"embedding"`
+			} `json:"data"`
+		}
+		if err := json.Unmarshal(respBody, &result); err != nil || len(result.Data) == 0 {
+			return nil, err
+		}
+		raw := result.Data[0].Embedding
+		vec32 := make([]float32, len(raw))
+		for i, v := range raw {
+			vec32[i] = float32(v)
+		}
+		return vec32, nil
+	}
 }
 
 func seed(ctx context.Context) error {

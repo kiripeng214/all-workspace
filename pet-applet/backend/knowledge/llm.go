@@ -18,10 +18,12 @@ type LLMProvider interface {
 
 // LLMConfig LLM 配置
 type LLMConfig struct {
-	Provider string
-	APIKey   string
-	APIURL   string
-	Model    string
+	Provider       string
+	APIKey         string
+	APIURL         string
+	Model          string
+	EmbeddingURL   string
+	EmbeddingModel string
 }
 
 // LLMResponse LLM 回答

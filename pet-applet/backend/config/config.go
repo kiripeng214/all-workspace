@@ -15,10 +15,12 @@ type Config struct {
 }
 
 type LLMConfig struct {
-	Provider string `yaml:"provider"`
-	APIKey   string `yaml:"api_key"`
-	APIURL   string `yaml:"api_url"`
-	Model    string `yaml:"model"`
+	Provider      string `yaml:"provider"`
+	APIKey        string `yaml:"api_key"`
+	APIURL        string `yaml:"api_url"`
+	Model         string `yaml:"model"`
+	EmbeddingURL  string `yaml:"embedding_url"`
+	EmbeddingModel string `yaml:"embedding_model"`
 }
 
 type DBConfig struct {

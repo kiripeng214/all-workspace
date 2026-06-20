@@ -9,7 +9,9 @@ server:
   port: "3000"
 
 llm:
-  provider: openai       # openai | anthropic | ""
+  provider: openai          # openai | anthropic | ""
   api_key: ""
-  api_url: ""
+  api_url: ""               # 聊天 API
   model: "gpt-4o-mini"
+  embedding_url: ""         # embedding API，默认使用 api_url
+  embedding_model: "text-embedding-ada-002"
