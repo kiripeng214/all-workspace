@@ -198,38 +198,52 @@ func Search(ctx context.Context, query string, limit int) ([]Result, error) {
 	return out, nil
 }
 
-// SearchByBreed 按品种搜索
+// SearchByBreed 按品种搜索（向量+关键词混合）
 func SearchByBreed(ctx context.Context, breed, query string, limit int) ([]Result, error) {
+	if limit <= 0 {
+		limit = 5
+	}
 	fullQuery := breed
 	if query != "" {
 		fullQuery = breed + " " + query
 	}
-	results, err := Search(ctx, fullQuery, limit)
+	// 向量搜索
+	results, err := Search(ctx, fullQuery, limit*2)
 	if err != nil {
 		return nil, err
 	}
-	// 优先返回匹配品种的结果
-	sortByBreed(results, breed)
-	return results, nil
-}
-
-func sortByBreed(results []Result, breed string) {
-	// 简单冒泡：品种匹配的排前面
-	for i := 0; i < len(results); i++ {
-		for j := i + 1; j < len(results); j++ {
-			ai := containsTag(results[i].Tags, breed)
-			aj := containsTag(results[j].Tags, breed)
-			if !ai && aj {
-				results[i], results[j] = results[j], results[i]
-			}
+	// 关键词过滤：品种或标签包含搜索词
+	breedLow := strings.ToLower(breed)
+	var matched []Result
+	for _, r := range results {
+		if keywordMatch(r, breedLow) || keywordMatch(r, strings.ToLower(query)) {
+			matched = append(matched, r)
 		}
 	}
+	// 如果有关键词匹配的结果，用它们
+	if len(matched) > 0 {
+		if len(matched) > limit {
+			matched = matched[:limit]
+		}
+		return matched, nil
+	}
+	// 无关键词匹配 → 返回空（不返回模糊结果）
+	return nil, nil
 }
 
-func containsTag(tags []string, target string) bool {
-	target = strings.ToLower(target)
-	for _, t := range tags {
-		if strings.Contains(strings.ToLower(t), target) {
+// keywordMatch 检查结果是否在标题/品种/标签中包含关键字
+func keywordMatch(r Result, keyword string) bool {
+	if keyword == "" {
+		return true
+	}
+	if strings.Contains(strings.ToLower(r.Title), keyword) {
+		return true
+	}
+	if strings.Contains(strings.ToLower(r.Content), keyword) {
+		return true
+	}
+	for _, t := range r.Tags {
+		if strings.Contains(strings.ToLower(t), keyword) {
 			return true
 		}
 	}
