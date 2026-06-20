@@ -76,16 +76,13 @@ func toFloat32(src []float64) []float32 {
 }
 
 // newEmbeddingFunc 创建 chromem-go 兼容的 embedding 函数
+// 支持：（1）Ollama （2）OpenAI/DeepSeek （3）本地 cosine 降级
 func newEmbeddingFunc(cfg LLMConfig) chromem.EmbeddingFunc {
 	url := cfg.EmbeddingURL
-	if url == "" {
-		url = cfg.APIURL
-		// 聊天 API 路径通常是 /chat/completions，embedding 是 /embeddings
-		url = strings.Replace(url, "/chat/completions", "/embeddings", 1)
-	}
+	useOllama := strings.Contains(url, "localhost") || strings.Contains(url, "127.0.0.1") || strings.Contains(url, "0.0.0.0")
 	model := cfg.EmbeddingModel
 	if model == "" {
-		model = "text-embedding-ada-002"
+		model = "nomic-embed-text"
 	}
 
 	return func(ctx context.Context, text string) ([]float32, error) {
@@ -93,17 +90,20 @@ func newEmbeddingFunc(cfg LLMConfig) chromem.EmbeddingFunc {
 			return toFloat32(cosineChunkEmbedding(text)), nil
 		}
 
-		body := map[string]interface{}{
-			"model": model,
-			"input": text,
+		var body map[string]interface{}
+		if useOllama {
+			body = map[string]interface{}{"model": model, "prompt": text}
+			} else {
+			body = map[string]interface{}{"model": model, "input": text}
 		}
 		data, _ := json.Marshal(body)
 		req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(data))
 		if err != nil {
-			return nil, err
+			log.Printf("Embedding 请求创建失败 (%v)，使用本地 embedding", err)
+			return toFloat32(cosineChunkEmbedding(text)), nil
 		}
 		req.Header.Set("Content-Type", "application/json")
-		if cfg.APIKey != "" {
+		if !useOllama && cfg.APIKey != "" {
 			req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
 		}
 
@@ -115,27 +115,36 @@ func newEmbeddingFunc(cfg LLMConfig) chromem.EmbeddingFunc {
 		defer resp.Body.Close()
 
 		respBody, _ := io.ReadAll(resp.Body)
-		var result struct {
+		if len(respBody) == 0 {
+			log.Printf("Embedding API 返回空响应，使用本地 embedding")
+			return toFloat32(cosineChunkEmbedding(text)), nil
+		}
+
+		// Ollama 格式: {"embedding": [0.1, ...]}
+		if useOllama {
+			var ollamaResp struct {
+				Embedding []float64 `json:"embedding"`
+			}
+			if err := json.Unmarshal(respBody, &ollamaResp); err != nil || len(ollamaResp.Embedding) == 0 {
+				log.Printf("Ollama embedding 响应异常，使用本地 embedding")
+				return toFloat32(cosineChunkEmbedding(text)), nil
+			}
+			return toFloat32(ollamaResp.Embedding), nil
+		}
+
+		// OpenAI 格式: {"data": [{"embedding": [0.1, ...]}]}
+		var openAIResp struct {
 			Data []struct {
 				Embedding []float64 `json:"embedding"`
 			} `json:"data"`
 		}
-		if err := json.Unmarshal(respBody, &result); err != nil || len(result.Data) == 0 {
-	preview := string(respBody)
-	if len(preview) > 300 { preview = preview[:300] }
-	log.Printf("Embedding API 响应异常 (%s)，使用本地 embedding", preview)
-			//log.Printf("Embedding API 响应异常，使用本地 embedding")
+		if err := json.Unmarshal(respBody, &openAIResp); err != nil || len(openAIResp.Data) == 0 {
+			log.Printf("Embedding API 响应异常，使用本地 embedding")
 			return toFloat32(cosineChunkEmbedding(text)), nil
 		}
-		raw := result.Data[0].Embedding
-		vec32 := make([]float32, len(raw))
-		for i, v := range raw {
-			vec32[i] = float32(v)
-		}
-		return vec32, nil
+		return toFloat32(openAIResp.Data[0].Embedding), nil
 	}
 }
-
 func seed(ctx context.Context) error {
 	for i, entry := range SeedData {
 		text := entry.Title + "\n" + entry.Content

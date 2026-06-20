@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	"pet-applet-backend/config"
@@ -30,6 +31,7 @@ func main() {
 	}
 
 	r := gin.Default()
+	r.Use(cors.Default())
 
 	api := r.Group("/api")
 	{
