@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS feeding_schedules (
+    id VARCHAR(36) PRIMARY KEY,
+    pet_id VARCHAR(36) NOT NULL,
+    time VARCHAR(10) NOT NULL,
+    food_type VARCHAR(50) DEFAULT '粮食',
+    amount VARCHAR(50) DEFAULT '一份',
+    FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
