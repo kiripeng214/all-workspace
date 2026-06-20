@@ -4,51 +4,79 @@
 
 <img src="https://github.com/kiripeng214/all-workspace/raw/main/doc/pet-applet.gif" width="100%" alt="宠物助手演示">
 
-一个宠物管理小程序，支持记录宠物信息、管理喂养计划和喂养记录。
+全栈宠物管理应用 + AI 知识库。支持多宠物信息管理、喂养计划与喂养记录追踪，集成 RAG（检索增强生成）知识库，提供宠物养护智能问答。
+
+## 功能
+
+| 模块 | 功能 |
+|------|------|
+| 🐕 宠物管理 | 增删改查宠物，头像/品种/生日/体重信息 |
+| 🍖 喂养计划 | 按时间/食物/分量管理每日喂养计划 |
+| 📋 喂养记录 | 记录每次喂养详情，按日/按宠物查看 |
+| 🧠 宠物知识库 | RAG + Ollama 本地 embedding 的智能问答，按品种自动匹配知识 |
 
 ## 项目结构
 
 ```
 pet-applet/
-├── backend/              # Go API 服务端
-│   ├── main.go               # 入口，Gin 路由注册
-│   ├── config/               # YAML 配置加载 (config.go + config.yaml)
-│   ├── database/             # MySQL 连接 + 自动迁移
-│   ├── handlers/             # HTTP 处理器 (pets, schedules, records, meta)
-│   └── models/               # 数据模型 (Pet, FeedingSchedule, FeedingRecord)
+├── backend/                # Go API 服务端
+│   ├── main.go                 # 入口，Gin 路由 + CORS + 知识库初始化
+│   ├── config/                 # YAML 配置 + 本地覆盖 (config-local.yaml)
+│   ├── database/               # MySQL 连接 + Goose 迁移
+│   ├── migrations/             # 4 个 Goose 迁移文件
+│   ├── handlers/               # HTTP 处理器 (含 knowledge.go RAG 接口)
+│   ├── knowledge/              # RAG 知识库 (chromem-go + LLM Provider)
+│   │   ├── knowledge.go            # 向量检索 + 混合搜索 + embedding 函数
+│   │   ├── llm.go                  # LLMProvider 接口 + OpenAI 实现
+│   │   ├── anthropic.go            # Anthropic 实现
+│   │   ├── db.go                   # MySQL 加载知识条目
+│   │   └── seed.go                 # 知识条目结构定义
+│   ├── models/                 # 数据模型
+│   └── data/                   # 种子数据 JSON (seed_knowledge.json)
 │
-├── miniprogram/          # uni-app + Vue 3 + TypeScript 前端
+├── miniprogram/            # uni-app + Vue 3 + TypeScript 前端
 │   ├── src/
-│   │   ├── api/              # 按领域拆分的 HTTP 客户端
-│   │   ├── config/           # API_BASE_URL 配置
-│   │   ├── pages/            # 页面组件
-│   │   │   ├── pets/         # 列表 / 详情 / 编辑
-│   │   │   ├── schedules/    # 喂养计划管理
-│   │   │   ├── records/      # 喂养记录查看
-│   │   │   └── index/        # 重定向至 pets/index
-│   │   ├── App.vue
-│   │   └── main.ts
-│   ├── pages.json            # 路由定义
-│   └── vite.config.ts        # Vite + uni-app 构建配置
+│   │   ├── api/                  # HTTP 客户端层
+│   │   │   ├── request.ts            # 通用请求封装
+│   │   │   ├── knowledge.ts          # 知识库 API
+│   │   │   └── pets/schedules/...
+│   │   ├── pages/
+│   │   │   ├── pets/                 # 宠物列表 / 详情 (含组件拆分) / 编辑
+│   │   │   │   └── components/       # PetInfoCard / TodayRecords / ScheduleList / AvatarPicker
+│   │   │   ├── schedules/            # 喂养计划管理 (ScheduleForm 组件)
+│   │   │   │   └── components/       # ScheduleForm
+│   │   │   ├── records/              # 喂养记录查看
+│   │   │   └── knowledge/            # RAG 知识库页面
+│   │   └── __tests__/            # 23 个测试用例
+│   └── pages.json              # 路由定义
 │
-├── .claude/              # Claude Code Loop Engine 体系
-│   ├── settings.json          # 总控配置（目录映射 / hooks / 偏好）
-│   ├── agents/               # 7 个专用子 agent
-│   ├── commands/             # 11 个 /project:* 快捷命令
-│   ├── skills/               # 3 个自动化技能脚本
-│   ├── workflows/            # 3 个多 agent 工作流
-│   ├── rules/                # 3 个领域编码规范
-│   └── memory/               # 持久记忆（偏好 / 决策 / 反馈）
-└── README.md
+├── .claude/                # Claude Code Loop Engine
+│   ├── commands/               # 11 个 /project:* 命令
+│   ├── agents/                 # 7 个领域 agent
+│   ├── skills/                 # 3 个技能
+│   ├── workflows/              # 3 个工作流
+│   ├── rules/                  # 后端/前端/通用编码规范
+│   └── memory/                 # 持久记忆
+│
+├── doc/                     # 设计文档 (PRD + Plan)
+│   ├── prd/                    # 产品需求文档
+│   └── plan/                   # 技术方案
+│
+└── .github/workflows/      # CI (go vet + test, vue-tsc + vitest, docker build)
 ```
 
 ## 技术栈
 
-| 层级   | 技术                                                              |
-| ------ | ----------------------------------------------------------------- |
-| 后端   | Go + [Gin](https://github.com/gin-gonic/gin) + MySQL              |
-| 前端   | [uni-app](https://uniapp.dcloud.net.cn/) + Vue 3 + TypeScript     |
-| 数据库 | MySQL 8.0 (InnoDB + utf8mb4)                                      |
+| 层级 | 技术 |
+|------|------|
+| 后端 | Go 1.26 + [Gin](https://github.com/gin-gonic/gin) + MySQL 8.0 |
+| 前端 | [uni-app 3](https://uniapp.dcloud.net.cn/) + Vue 3 + TypeScript + Vite 5 |
+| 数据库迁移 | [Goose](https://github.com/pressly/goose) (4 个迁移文件) |
+| 向量检索 | [chromem-go](https://github.com/philippgille/chromem-go) (纯 Go 内存向量库) |
+| AI Embedding | Ollama + nomic-embed-text / 本地 cosine 降级 |
+| AI 问答 | LLMProvider 接口 (OpenAI / DeepSeek / Anthropic / 降级纯检索) |
+| 容器化 | Docker 多阶段构建 (最终 ~15MB) |
+| CI | GitHub Actions (后端 vet+test, 前端 type-check+test, docker build) |
 
 ## 快速开始
 
@@ -57,141 +85,99 @@ pet-applet/
 - Go 1.21+
 - Node.js 18+
 - MySQL 8.0
+- (可选) Ollama + nomic-embed-text — 本地 embedding
 
 ### 1. 数据库
-
-创建数据库：
 
 ```sql
 CREATE DATABASE pet_applet CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-默认连接配置在 `backend/config/config.yaml`，可自行修改：
-
-```yaml
-db:
-  host: localhost
-  port: "3306"
-  user: root
-  password: "123456"
-  name: pet_applet
-```
-
-> 注：表结构会在后端启动时自动创建（auto-migration）。
+连接配置在 `backend/config/config.yaml`，本地覆盖写 `config-local.yaml`（不上传 Git）。
 
 ### 2. 启动后端
 
 ```bash
 cd backend
-go build -o pet-applet-server .
-./pet-applet-server
+go build -o pet-applet-server . && ./pet-applet-server
 ```
 
-API 服务默认监听 `http://localhost:3000`。
+首次启动自动执行 Goose 迁移建表 + 插入种子知识数据。
 
 ### 3. 启动前端
 
 ```bash
 cd miniprogram
 npm install
-npm run dev:h5        # H5 浏览器开发
-# 或
-npm run dev:mp-weixin  # 微信小程序开发
+npm run dev:h5
 ```
 
-### 完整命令速查
+### 4. (可选) 本地 Embedding
 
 ```bash
-# 后端
-cd backend && go build -o pet-applet-server . && ./pet-applet-server
+ollama pull nomic-embed-text
+```
 
-# 前端 H5
-cd miniprogram && npm run dev:h5
+在 `config/config-local.yaml` 配置：
 
-# 前端 类型检查
-npm run type-check
-
-# 前端 生产构建
-npm run build:h5
+```yaml
+llm:
+  embedding_url: "http://localhost:11434/api/embeddings"
+  embedding_model: "nomic-embed-text"
 ```
 
 ## API 概览
 
-所有接口以 `/api` 为前缀。
-
-| 方法     | 路径                          | 说明                   |
-| -------- | ----------------------------- | ---------------------- |
-| `GET`    | `/api/pets`                   | 获取宠物列表            |
-| `GET`    | `/api/pets/:id`               | 获取宠物详情            |
-| `POST`   | `/api/pets`                   | 新增宠物                |
-| `PUT`    | `/api/pets/:id`               | 更新宠物信息            |
-| `DELETE` | `/api/pets/:id`               | 删除宠物                |
-| `GET`    | `/api/pets/schedules/:petId`  | 获取某宠物的喂养计划     |
-| `POST`   | `/api/pets/schedules/:petId`  | 新增喂养计划            |
-| `PUT`    | `/api/schedules/:id`          | 更新喂养计划            |
-| `DELETE` | `/api/schedules/:id`          | 删除喂养计划            |
-| `GET`    | `/api/pets/records/:petId`    | 获取某宠物的喂养记录     |
-| `GET`    | `/api/pets/records/today/:petId` | 获取今日喂养记录      |
-| `POST`   | `/api/pets/records/:petId`    | 新增喂养记录            |
-| `DELETE` | `/api/records/:id`            | 删除喂养记录            |
-| `GET`    | `/api/meta/breeds`            | 获取动物类型和品种列表   |
-
-## Loop Engine（`.claude/` 体系）
-
-Loop Engine 是项目的智能协作体系，让 Claude 理解项目结构、编码规范和历史决策，减少重复沟通。
-
-### 组成
-
-| 目录 | 数量 | 作用 |
+| 方法 | 路径 | 说明 |
 |------|------|------|
-| `agents/` | 7 | 领域专用子 agent（Go 后端、uni-app 前端、数据库、审查等），各有独立工具权限 |
-| `commands/` | 11 | `/:project:*` 快捷命令，覆盖开发/测试/构建/部署全流程 |
-| `skills/` | 3 | 自动化脚本，`build-check` 绑定 pre-commit 自动校验 |
-| `workflows/` | 3 | 多 agent 编排工作流，支持并行任务 + 自动合并 |
-| `rules/` | 3 | 编码规范（通用/后端/前端），每次对话自动加载 |
-| `memory/` | — | 持久记忆，记录用户偏好、历史决策、反馈，跨会话自动加载 |
+| `GET` | `/api/pets` | 宠物列表 |
+| `POST` | `/api/pets` | 新增宠物 |
+| `GET/PUT/DELETE` | `/api/pets/:id` | 宠物详情/更新/删除 |
+| `GET/POST` | `/api/pets/schedules/:petId` | 喂养计划列表/新增 |
+| `PUT/DELETE` | `/api/schedules/:id` | 喂养计划更新/删除 |
+| `GET` | `/api/pets/records/:petId` | 喂养记录 |
+| `GET` | `/api/pets/records/today/:petId` | 今日记录 |
+| `POST` | `/api/pets/records/:petId` | 新增喂养记录 |
+| `DELETE` | `/api/records/:id` | 删除记录 |
+| `GET` | `/api/knowledge/search?q=&breed=` | RAG 知识库搜索 + AI 问答 |
+| `GET` | `/api/meta/breeds` | 动物类型和品种列表 |
 
-### 核心工作流
+## RAG 知识库架构
 
 ```
-你输入需求
+用户输入
     │
     ▼
-/project:loop-task   →   PRD → Plan → 实现
-    │                     ├── 顺序模式：单一领域
-    │                     └── 并行模式：跨领域（数据库+后端+前端并行）
+chromem-go 向量检索 ──→ 关键词混合过滤
     │
-    ├── /component-split    →  分析大组件 → 拆分子组件 → 自动验证
-    ├── /code-review        →  多维度代码审查
-    ├── /deploy-build       →  后端 Docker 镜像 + 前端小程序打包
-    └── /push-code          →  检查→推送
+    ▼
+LLMProvider (接口)
+    ├── OpenAIProvider
+    ├── AnthropicProvider
+    └── 降级：纯检索结果
+    │
+    ▼
+前端展示：AI 回答 + 参考来源
 ```
 
-### 自动纠错机制
+- **16 条种子知识**：涵盖狗/猫/通用宠物养护（疫苗接种、驱虫、饮食、品种特性等）
+- **混合搜索**：向量相似度 + 关键词精确匹配，无匹配不返回模糊结果
+- **自动降级**：API 不可用时自动用本地 cosine embedding，知识库不受影响
 
-测试失败或审查发现问题时，自动进入纠错循环：
-
-```
-修复 → 重跑验证 → 还失败 → 再修复 → 再验证 → ... → 最多 5 轮
-```
-
-不中断、不等待用户确认，通过后自动继续流程。
-
-### 快捷命令一览
+## Loop Engine
 
 | 命令 | 说明 |
 |------|------|
-| `/project:backend-start` | 构建并启动 Go 后端 |
-| `/project:frontend-dev` | 启动前端 H5 开发服务器 |
-| `/project:db-init` | 初始化 MySQL 数据库 |
-| `/project:build-check` | 提交前构建检查（4 步） |
-| `/project:type-check` | TypeScript 类型检查 |
-| `/project:component-split` | 大组件拆小组件 |
-| `/project:deploy-build` | 生产构建（后端镜像 + 前端小程序） |
+| `/project:loop-task` | 全流程：PRD → Plan → 实现 (顺序/并行模式) |
+| `/project:component-split` | 大组件拆小组件 + 自动验证 |
+| `/project:deploy-build` | 生产构建 (Docker 镜像 + 微信小程序) |
 | `/project:push-code` | 检查后推送代码 |
-| `/project:loop-task` | 全流程：PRD→Plan→实现 |
+| `/project:build-check` | 提交流前 4 步构建检查 |
+| `/project:type-check` | TypeScript 类型检查 |
 | `/project:loop-health` | Loop Engine 健康检查 |
-| `/project:loop-engineering` | 自动审查并调整 Loop Engine 体系 |
+| `/project:loop-engineering` | 自动审查调整 Loop Engine 体系 |
+
+详情见 [.claude/README](.claude/)。
 
 ## 许可证
 
