@@ -23,7 +23,7 @@ func main() {
 		APIURL:   cfg.LLM.APIURL,
 		Model:    cfg.LLM.Model,
 	}
-	if err := knowledge.Init(context.Background(), llmCfg); err != nil {
+	if err := knowledge.Init(context.Background(), database.DB, llmCfg); err != nil {
 		log.Printf("⚠️ 知识库初始化失败（不影响核心功能）: %v", err)
 	}
 

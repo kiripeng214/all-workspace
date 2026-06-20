@@ -2,6 +2,7 @@ package knowledge
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"math"
@@ -27,7 +28,8 @@ type Result struct {
 }
 
 // Init 初始化向量知识库和 LLM 提供者
-func Init(ctx context.Context, llmCfg LLMConfig) error {
+// sqlDB 可选，传入时从 MySQL 加载知识库，否则从内置种子数据加载
+func Init(ctx context.Context, sqlDB *sql.DB, llmCfg LLMConfig) error {
 	var initErr error
 	initOnce.Do(func() {
 		db := chromem.NewDB()
@@ -37,12 +39,19 @@ func Init(ctx context.Context, llmCfg LLMConfig) error {
 			initErr = fmt.Errorf("创建 collection 失败: %w", err)
 			return
 		}
-		if err := seed(ctx); err != nil {
-			initErr = fmt.Errorf("初始化知识库失败: %w", err)
-			return
+		if sqlDB != nil {
+			if err := LoadFromDB(ctx, sqlDB); err != nil {
+				initErr = fmt.Errorf("从数据库加载知识库失败: %w", err)
+				return
+			}
+		} else {
+			if err := seed(ctx); err != nil {
+				initErr = fmt.Errorf("加载内置知识库失败: %w", err)
+				return
+			}
+			log.Printf("内置知识库加载完成，共 %d 条", len(SeedData))
 		}
 		llm = NewProvider(llmCfg)
-		log.Printf("知识库加载完成，共 %d 条", len(SeedData))
 	})
 	return initErr
 }
