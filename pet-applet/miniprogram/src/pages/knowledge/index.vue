@@ -76,9 +76,11 @@ async function doSearch() {
     })
     results.value = data.results || []
     answer.value = data.answer || null
-  } catch {
+  } catch (e) {
+    console.error('搜索异常:', e)
     results.value = []
     answer.value = null
+    uni.showToast({ title: '搜索失败，请检查后端是否运行', icon: 'none' })
   } finally {
     loading.value = false
   }
