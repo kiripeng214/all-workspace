@@ -2,7 +2,7 @@
   <view class="knowledge">
     <view class="search-bar">
       <input class="search-input" v-model="query" placeholder="搜索宠物知识..." @confirm="doSearch" />
-      <button class="search-btn" @click="doSearch">搜索</button>
+      <view class="search-btn" @tap="doSearch">搜索</view>
     </view>
 
     <view v-if="petBreed" class="breed-tip">
