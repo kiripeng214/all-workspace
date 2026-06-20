@@ -2,7 +2,7 @@
   <view class="knowledge">
     <view class="search-bar">
       <input class="search-input" v-model="query" placeholder="搜索宠物知识..." @confirm="doSearch" />
-      <view class="search-btn" @tap="doSearch">搜索</view>
+      <view class="search-btn" @click="doSearch">搜索</view>
     </view>
 
     <view v-if="petBreed" class="breed-tip">
@@ -66,14 +66,17 @@ onLoad((options: any) => {
 })
 
 async function doSearch() {
+  console.log('doSearch 被调用, query=', query.value)
   if (!query.value.trim()) return
   loading.value = true
   searched.value = true
   try {
+    console.log('准备请求 searchKnowledge')
     const data = await searchKnowledge({
       q: query.value.trim(),
       breed: petBreed.value || undefined,
     })
+    console.log('searchKnowledge 返回', data)
     results.value = data.results || []
     answer.value = data.answer || null
   } catch (e) {
