@@ -292,3 +292,15 @@ func EmbedContent(text string) ([]float64, error) {
 func EstimateTokens(text string) int {
 	return utf8.RuneCountInString(text) / 2
 }
+
+// previewStr 截断字节数组为可读字符串（最长 200 字符）
+func previewStr(b []byte) string {
+	if len(b) == 0 {
+		return ""
+	}
+	s := string(b)
+	if len(s) > 200 {
+		s = s[:200]
+	}
+	return s
+}
