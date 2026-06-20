@@ -18,8 +18,8 @@ export interface SearchResponse {
 }
 
 export function searchKnowledge(params: { q?: string; breed?: string }) {
-  const query = new URLSearchParams()
-  if (params.q) query.set('q', params.q)
-  if (params.breed) query.set('breed', params.breed)
-  return request<SearchResponse>(`/knowledge/search?${query.toString()}`)
+  const parts: string[] = []
+  if (params.q) parts.push('q=' + encodeURIComponent(params.q))
+  if (params.breed) parts.push('breed=' + encodeURIComponent(params.breed))
+  return request<SearchResponse>(`/knowledge/search?${parts.join('&')}`)
 }
